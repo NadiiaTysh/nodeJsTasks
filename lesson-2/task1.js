@@ -5,41 +5,52 @@ class TimersManager {
 
   add(obj, ...rest) {
     if (typeof obj.name !== 'string') {
-      throw new Error('name is not a string');
+      throw new Error('name must be a string');
     };
     if (obj.name.length === 0) {
-      throw new Error('name is empty');
+      throw new Error('name cannot be empty');
     };
     if (!obj.delay) {
-      throw new Error('delay is not stated');
+      throw new Error('delay must be stated');
     };
     if (typeof obj.delay !== 'number') {
-      throw new Error('delay is not a number');
+      throw new Error('delay must be a number');
     };
     if (obj.delay < 0) {
-      throw new Error('delayhas negative value');
+      throw new Error('delay cannot be negative value');
     };
     if (obj.delay > 5000) {
-      throw new Error('delay is too long');
+      throw new Error('delay must be less than 5000 ms');
     };
     if (typeof obj.interval !== 'boolean' && !obj.interval) {
-      throw new Error('interval is not stated');
+      throw new Error('interval must be stated');
     };
     if (typeof obj.interval !== 'boolean') {
-      throw new Error('interval is not boolean');
+      throw new Error('interval must be boolean');
     };
     if (!obj.job) {
-      throw new Error('job is not stated');
+      throw new Error('job must be stated');
     };
     if (typeof obj.job !== 'function') {
-      throw new Error('job is not a function');
+      throw new Error('job must be a function');
     };
+    this.timers.map(timer => {
+      if (timer.desc.name === obj.name) {
+        throw new Error(`timer with name ${obj.name} already exists`);
+      };
+    });
+    this.timers.map(timer => {
+      if (timer.timerId) {
+        throw new Error(`timer cannot be added after others are started`);
+      };
+    });
 
     const descriptions = {
       desc: obj,
       args: rest,
     };
     this.timers.push(descriptions);
+
     return this;
   };
   remove(name) {
@@ -48,6 +59,7 @@ class TimersManager {
       if (timerName === name) {
         clearTimeout(timerId);
       };
+      
       return timerName !== name;
     });
     this.timers = timersNew;
