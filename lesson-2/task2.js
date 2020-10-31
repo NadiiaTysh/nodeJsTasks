@@ -1,6 +1,7 @@
 class TimersManager {
   constructor() {
       this.timers = [];
+      this.logs = [];
   }
 
   add(obj, ...rest) {
@@ -99,19 +100,21 @@ class TimersManager {
   };
   _log() {
     this.timers.map(timer => {
-      const { desc: {name, job}, args, timerId } = timer;
-      const result = {
+      const { desc: {name, job}, args } = timer;
+      const log = {
         name,
         in: args,
-        out: job(),
+        out: job(...args),
         created: new Date().toISOString(),
-      }
-      const r = job();
-      console.log(r);
-    })
+      };
+      this.logs.push(log);
+    });
   };
   print() {
     this._log();
+    console.log(this.logs);
+    
+    return this.logs;
   };
 };
 
