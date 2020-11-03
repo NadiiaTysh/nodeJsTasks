@@ -1,9 +1,7 @@
 class TimersManager {
-  #timers;
-  #logs;
   constructor() {
-      this.#timers = [];
-      this.#logs = [];
+      this.timers = [];
+      this.logs = [];
   }
 
   static _validate(obj) {
@@ -41,12 +39,12 @@ class TimersManager {
 
   add(obj, ...rest) {
     TimersManager._validate(obj);
-    this.#timers.map(timer => {
+    this.timers.map(timer => {
       if (timer.desc.name === obj.name) {
         throw new Error(`timer with name ${obj.name} already exists`);
       };
     });
-    this.#timers.map(timer => {
+    this.timers.map(timer => {
       if (timer.timerId) {
         throw new Error(`timer cannot be added after others are started`);
       };
@@ -56,13 +54,13 @@ class TimersManager {
       desc: obj,
       args: rest,
     };
-    this.#timers.push(descriptions);
+    this.timers.push(descriptions);
 
     return this;
   };
 
   remove(name) {
-    const timersNew = this.#timers.filter(timer => {
+    const timersNew = this.timers.filter(timer => {
       const { desc: {name: timerName}, timerId } = timer;
       if (timerName === name) {
         clearTimeout(timerId);
@@ -74,7 +72,7 @@ class TimersManager {
   };
 
   start() {
-    this.#timers.map(timer => {
+    this.timers.map(timer => {
       const { desc: {name, interval, job, delay}, args } = timer;
       let errorLog = null;
       
@@ -106,9 +104,9 @@ class TimersManager {
       errorLog ? log.error = errorLog : null;
       log.created = new Date().toISOString()
 
-      this.#logs.push(log);
+      this.logs.push(log);
     });
-    const maxDelayTimer = this.#timers.reduce((prevTimer, currentTimer) => {
+    const maxDelayTimer = this.timers.reduce((prevTimer, currentTimer) => {
 
       return (prevTimer.desc.delay > currentTimer.desc.delay) ? prevTimer : currentTimer;
     });
@@ -118,17 +116,15 @@ class TimersManager {
   };
 
   stop() {
-    try {
-      this.#timers.map(timer => {
+    if(this.timers) {
+      this.timers.map(timer => {
         clearTimeout(timer.timerId);
       });
-    } catch (error) {
-      console.log(error.message);
-      };
+    }
   };
 
   pause(name) {
-    this.#timers.find(timer => {
+    this.timers.find(timer => {
       const { desc: {name: timerName}, timerId } = timer;
       if (timerName === name) {
         clearTimeout(timerId);
@@ -137,7 +133,7 @@ class TimersManager {
   };
 
   resume(name) {
-    this.#timers.map(timer => {
+    this.timers.map(timer => {
       const { desc: {name: timerName, interval, job, delay}, args } = timer;
       if (timerName === name) {
         const timerId = interval
