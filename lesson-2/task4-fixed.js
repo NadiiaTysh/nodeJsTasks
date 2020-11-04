@@ -1,10 +1,5 @@
 class TimersManager {
-  constructor() {
-      this.timers = [];
-      this.logs = [];
-  }
-
-  static _validate(obj) {
+    static _validate(obj) {
     if (typeof obj.name !== 'string') {
       throw new Error('name must be a string');
     };
@@ -36,6 +31,11 @@ class TimersManager {
       throw new Error('job must be a function');
     };
   };
+  
+  constructor() {
+      this.timers = [];
+      this.logs = [];
+  }
 
   add(obj, ...rest) {
     TimersManager._validate(obj);
