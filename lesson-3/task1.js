@@ -9,7 +9,7 @@ class Bank extends EventEmitter {
     register(acc) {
         this.on("error", (error) => console.log(error));
         
-        this.accounts.map(account => {
+        this.accounts.find(account => {
             if (account.name === acc.name) {
                 this.emit('error', `User ${acc.name} already exists`);
             };
@@ -56,7 +56,7 @@ bank.on("add", function(id, value) {
         this.emit('error', `Id ${id} is not valid`);
     };
 
-    this.accounts.map(account => {
+    this.accounts.find(account => {
         if (account.id === id) {
             account.balance = account.balance + value;
         };
@@ -69,7 +69,7 @@ bank.on("get", function(id, cb) {
         this.emit('error', `Id ${id} is not valid`);
     };
 
-    this.accounts.map(account => {
+    this.accounts.find(account => {
         if (account.id === id) {
             cb(account.balance);
         };
@@ -86,7 +86,7 @@ bank.on("withdraw", function(id, value) {
         this.emit('error', `Id ${id} is not valid`);
     };
 
-    this.accounts.map(account => {
+    this.accounts.find(account => {
         if (account.id === id) {
             const available = account.balance - value;
             if (available < 0) {
