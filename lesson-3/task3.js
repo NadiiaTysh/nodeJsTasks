@@ -49,14 +49,10 @@ class Bank extends EventEmitter {
 
 const bank = new Bank();
 
-const personFirstId = bank.register({
-    name: 'Pitter Black',
-    balance: 100,
-});
-
-const personSecondId = bank.register({
+const personId = bank.register({
     name: 'Oliver White',
     balance: 700,
+    limit: (amount) => amount < 10,
 });
 
 bank.on('error', (error) => console.log(error));
@@ -66,7 +62,7 @@ bank.on('add', function (id, value) {
         this.emit('error', `Cannot add ${value} value`);
     }
 
-    const [filtered] = this.accounts.filter((account) => account.id === id);
+    const [filtered] = this.accounts.filter(account => account.id === id);
     if (!filtered) {
         this.emit('error', `Id ${id} is not valid`);
     };
@@ -79,7 +75,7 @@ bank.on('add', function (id, value) {
 });
 
 bank.on('get', function (id, cb) {
-    const [filtered] = this.accounts.filter((account) => account.id === id);
+    const [filtered] = this.accounts.filter(account => account.id === id);
     if (!filtered) {
         this.emit('error', `Id ${id} is not valid`);
     };
@@ -96,7 +92,7 @@ bank.on('withdraw', function (id, value) {
         this.emit('error', 'Cannot withdraw negative value');
     };
 
-    const [filtered] = this.accounts.filter((account) => account.id === id);
+    const [filtered] = this.accounts.filter(account => account.id === id);
     if (!filtered) {
         this.emit('error', `Id ${id} is not valid`);
     };
@@ -104,7 +100,9 @@ bank.on('withdraw', function (id, value) {
     this.accounts.find((account) => {
         if (account.id === id) {
             const available = account.balance - value;
-            if (available < 0) {
+            if (!account.limit(value, account.balance, available)) {
+                this.emit('error', 'You exceeded your limit');
+            } else if (available < 0) {
                 this.emit(
                     'error',
                     `Only ${account.balance} available to withdraw`
@@ -129,19 +127,27 @@ bank.on('send', function (idFirst, idSecond, value) {
         );
         if (!filtered1) {
             this.emit('error', `Id ${idFirst} is not valid`);
+        } else if (!account.limit(value, account.balance, available)) {
+            this.emit('error', 'You exceeded your limit');
         } else if (account.id === idFirst) {
             const available = account.balance - value;
             account.balance = available;
         }
 
-        const [filtered2] = this.accounts.filter(
-            (account) => account.id === idSecond
-        );
+        const [filtered2] = this.accounts.filter(account => account.id === idSecond);
         if (!filtered2) {
             this.emit('error', `Id ${idSecond} is not valid`);
         } else if (account.id === idSecond) {
             const available = account.balance + value;
             account.balance = available;
+        };
+    });
+});
+
+bank.on('changeLimit', function(id, cb) {
+    this.accounts.find((account) => {
+        if (account.id === id) {
+            account.limit = cb;
         };
     });
 });
@@ -154,7 +160,33 @@ bank.on('send', function (idFirst, idSecond, value) {
 // bank.emit("get", personFirstId, (balance) => {
 //     console.log(`I have ${balance}₴`); // I have 70₴
 // });
-bank.emit('send', personFirstId, personSecondId, 50);
-bank.emit('get', personSecondId, (balance) => {
-    console.log(`I have ${balance}₴`); // I have 750₴
+// bank.emit('send', personFirstId, personSecondId, 50);
+// bank.emit('get', personSecondId, (balance) => {
+//     console.log(`I have ${balance}₴`); // I have 750₴
+// });
+
+bank.emit('withdraw', personId, 5);
+bank.emit('get', personId, (amount) => {
+    console.log(`I have ${amount}₴`); // I have 695₴
+});
+
+// // Вариант 1
+bank.emit('changeLimit', personId, (amount, currentBalance, updatedBalance) => {
+    return amount < 100 && updatedBalance > 700;
+});
+bank.emit('withdraw', personId, 5); // Error
+
+// // Вариант 2
+bank.emit('changeLimit', personId, (amount, currentBalance, updatedBalance) => {
+    return amount < 100 && updatedBalance > 700 && currentBalance > 800;
+});
+
+// // Вариант 3
+bank.emit('changeLimit', personId, (amount, currentBalance) => {
+    return currentBalance > 800;
+});
+
+// // Вариант 4
+bank.emit('changeLimit', personId, (amount, currentBalance, updatedBalance) => {
+    return updatedBalance > 900;
 });
