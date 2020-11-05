@@ -21,7 +21,13 @@ class Bank extends EventEmitter {
     constructor() {
         super();
         this.#accounts = [];
-    }
+        this.onError();
+        this.onAdd();
+        this.onGet();
+        this.onWithdraw();
+        this.onSend();
+        this.onChangeLimit();
+    };
 
     getAccounts() {
         return this.#accounts;
@@ -41,7 +47,7 @@ class Bank extends EventEmitter {
                 'error',
                 `User ${acc.name} cannot have balance ${acc.balance}`
             );
-        }
+        };
 
         if (Bank._validate(acc.name, acc.balance)) {
             const id = Math.random().toString(36).substr(2, 9);
@@ -51,6 +57,115 @@ class Bank extends EventEmitter {
             return id;
         };
     };
+
+    onError() {
+        this.on('error', (error) => console.log(error));
+    };
+
+    onAdd() {
+        this.on('add', function (id, value) {
+            if (value <= 0) {
+                this.emit('error', `Cannot add ${value} value`);
+            }
+    
+            const [filtered] = this.getAccounts().filter(account => account.id === id);
+            if (!filtered) {
+                this.emit('error', `Id ${id} is not valid`);
+            };
+    
+            this.getAccounts().find((account) => {
+                if (account.id === id) {
+                    account.balance = account.balance + value;
+                };
+            });
+        });
+    };
+
+    onGet() {
+        this.on('get', function (id, cb) {
+            const [filtered] = this.getAccounts().filter(account => account.id === id);
+            if (!filtered) {
+                this.emit('error', `Id ${id} is not valid`);
+            };
+    
+            this.getAccounts().find((account) => {
+                if (account.id === id) {
+                    cb(account.balance);
+                };
+            });
+        });
+    };
+
+    onWithdraw() {
+        this.on('withdraw', function (id, value) {
+            if (value < 0) {
+                this.emit('error', 'Cannot withdraw negative value');
+            };
+    
+            const [filtered] = this.getAccounts().filter(account => account.id === id);
+            if (!filtered) {
+                this.emit('error', `Id ${id} is not valid`);
+            };
+    
+            this.getAccounts().find((account) => {
+                if (account.id === id) {
+                    const available = account.balance - value;
+                    if (!account.limit(value, account.balance, available)) {
+                        this.emit('error', 'You exceeded your limit');
+                    } else if (available < 0) {
+                        this.emit(
+                            'error',
+                            `Only ${account.balance} available to withdraw`
+                        );
+                    } else {
+                        account.balance = available;
+                    };
+                };
+            });
+        });
+    };
+
+    onSend() {
+        this.on('send', function (idFirst, idSecond, value) {
+            if (value <= 0) {
+                this.emit(
+                    'error',
+                    `Only positive value can be sent, you stated ${value}`
+                );
+            };
+            this.getAccounts().find((account) => {
+                const [filtered1] = this.getAccounts().filter(
+                    (account) => account.id === idFirst
+                );
+                if (!filtered1) {
+                    this.emit('error', `Id ${idFirst} is not valid`);
+                } else if (!account.limit(value, account.balance, available)) {
+                    this.emit('error', 'You exceeded your limit');
+                } else if (account.id === idFirst) {
+                    const available = account.balance - value;
+                    account.balance = available;
+                }
+    
+                const [filtered2] = this.getAccounts().filter(account => account.id === idSecond);
+                if (!filtered2) {
+                    this.emit('error', `Id ${idSecond} is not valid`);
+                } else if (account.id === idSecond) {
+                    const available = account.balance + value;
+                    account.balance = available;
+                };
+            });
+        });
+    };
+
+    onChangeLimit() {
+        this.on('changeLimit', function(id, cb) {
+            this.getAccounts().find((account) => {
+                if (account.id === id) {
+                    account.limit = cb;
+                };
+            });
+        });
+    };
 };
 
 const bank = new Bank();
@@ -59,103 +174,6 @@ const personId = bank.register({
     name: 'Oliver White',
     balance: 700,
     limit: (amount) => amount < 10,
-});
-
-bank.on('error', (error) => console.log(error));
-
-bank.on('add', function (id, value) {
-    if (value <= 0) {
-        this.emit('error', `Cannot add ${value} value`);
-    }
-
-    const [filtered] = this.getAccounts().filter(account => account.id === id);
-    if (!filtered) {
-        this.emit('error', `Id ${id} is not valid`);
-    };
-
-    this.getAccounts().find((account) => {
-        if (account.id === id) {
-            account.balance = account.balance + value;
-        };
-    });
-});
-
-bank.on('get', function (id, cb) {
-    const [filtered] = this.getAccounts().filter(account => account.id === id);
-    if (!filtered) {
-        this.emit('error', `Id ${id} is not valid`);
-    };
-
-    this.getAccounts().find((account) => {
-        if (account.id === id) {
-            cb(account.balance);
-        };
-    });
-});
-
-bank.on('withdraw', function (id, value) {
-    if (value < 0) {
-        this.emit('error', 'Cannot withdraw negative value');
-    };
-
-    const [filtered] = this.getAccounts().filter(account => account.id === id);
-    if (!filtered) {
-        this.emit('error', `Id ${id} is not valid`);
-    };
-
-    this.getAccounts().find((account) => {
-        if (account.id === id) {
-            const available = account.balance - value;
-            if (!account.limit(value, account.balance, available)) {
-                this.emit('error', 'You exceeded your limit');
-            } else if (available < 0) {
-                this.emit(
-                    'error',
-                    `Only ${account.balance} available to withdraw`
-                );
-            } else {
-                account.balance = available;
-            };
-        };
-    });
-});
-
-bank.on('send', function (idFirst, idSecond, value) {
-    if (value <= 0) {
-        this.emit(
-            'error',
-            `Only positive value can be sent, you stated ${value}`
-        );
-    };
-    this.getAccounts().find((account) => {
-        const [filtered1] = this.getAccounts().filter(
-            (account) => account.id === idFirst
-        );
-        if (!filtered1) {
-            this.emit('error', `Id ${idFirst} is not valid`);
-        } else if (!account.limit(value, account.balance, available)) {
-            this.emit('error', 'You exceeded your limit');
-        } else if (account.id === idFirst) {
-            const available = account.balance - value;
-            account.balance = available;
-        }
-
-        const [filtered2] = this.getAccounts().filter(account => account.id === idSecond);
-        if (!filtered2) {
-            this.emit('error', `Id ${idSecond} is not valid`);
-        } else if (account.id === idSecond) {
-            const available = account.balance + value;
-            account.balance = available;
-        };
-    });
-});
-
-bank.on('changeLimit', function(id, cb) {
-    this.getAccounts().find((account) => {
-        if (account.id === id) {
-            account.limit = cb;
-        };
-    });
 });
 
 // bank.emit("add", personFirstId, 20);

@@ -21,6 +21,11 @@ class Bank extends EventEmitter {
     constructor() {
         super();
         this.#accounts = [];
+        this.onError();
+        this.onAdd();
+        this.onGet();
+        this.onWithdraw();
+        this.onSend();  
     };
 
     getAccounts() {
@@ -51,6 +56,103 @@ class Bank extends EventEmitter {
             return id;
         };
     };
+    
+    onError() {
+        this.on('error', (error) => console.log(error));
+    };
+
+    onAdd() {
+        this.on('add', function (id, value) {
+            if (value <= 0) {
+                this.emit('error', `Cannot add ${value} value`);
+            }
+    
+            const [filtered] = this.getAccounts().filter((account) => account.id === id);
+            if (!filtered) {
+                this.emit('error', `Id ${id} is not valid`);
+            };
+    
+            this.getAccounts().find((account) => {
+                if (account.id === id) {
+                    account.balance = account.balance + value;
+                };
+            });
+        });
+    };
+
+    onGet() {
+        this.on('get', function (id, cb) {
+            const [filtered] = this.getAccounts().filter((account) => account.id === id);
+            if (!filtered) {
+                this.emit('error', `Id ${id} is not valid`);
+            };
+    
+            this.getAccounts().find((account) => {
+                if (account.id === id) {
+                    cb(account.balance);
+                };
+            });
+        });
+    };
+
+    onWithdraw() {
+        this.on('withdraw', function (id, value) {
+            if (value < 0) {
+                this.emit('error', 'Cannot withdraw negative value');
+            };
+    
+            const [filtered] = this.getAccounts().filter((account) => account.id === id);
+            if (!filtered) {
+                this.emit('error', `Id ${id} is not valid`);
+            };
+    
+            this.getAccounts().find((account) => {
+                if (account.id === id) {
+                    const available = account.balance - value;
+                    if (available < 0) {
+                        this.emit(
+                            'error',
+                            `Only ${account.balance} available to withdraw`
+                        );
+                    } else {
+                        account.balance = available;
+                    };
+                };
+            });
+        });
+    };
+
+    onSend() {
+        this.on('send', function (idFirst, idSecond, value) {
+            if (value <= 0) {
+                this.emit(
+                    'error',
+                    `Only positive value can be sent, you stated ${value}`
+                );
+            };
+            this.getAccounts().find((account) => {
+                const [filtered1] = this.getAccounts().filter(
+                    (account) => account.id === idFirst
+                );
+                if (!filtered1) {
+                    this.emit('error', `Id ${idFirst} is not valid`);
+                } else if (account.id === idFirst) {
+                    const available = account.balance - value;
+                    account.balance = available;
+                }
+    
+                const [filtered2] = this.getAccounts().filter(
+                    (account) => account.id === idSecond
+                );
+                if (!filtered2) {
+                    this.emit('error', `Id ${idSecond} is not valid`);
+                } else if (account.id === idSecond) {
+                    const available = account.balance + value;
+                    account.balance = available;
+                };
+            });
+        });
+    };
 };
 
 const bank = new Bank();
@@ -63,93 +165,6 @@ const personFirstId = bank.register({
 const personSecondId = bank.register({
     name: 'Oliver White',
     balance: 700,
-});
-
-bank.on('error', (error) => console.log(error));
-
-bank.on('add', function (id, value) {
-    if (value <= 0) {
-        this.emit('error', `Cannot add ${value} value`);
-    }
-
-    const [filtered] = this.getAccounts().filter((account) => account.id === id);
-    if (!filtered) {
-        this.emit('error', `Id ${id} is not valid`);
-    };
-
-    this.getAccounts().find((account) => {
-        if (account.id === id) {
-            account.balance = account.balance + value;
-        };
-    });
-});
-
-bank.on('get', function (id, cb) {
-    const [filtered] = this.getAccounts().filter((account) => account.id === id);
-    if (!filtered) {
-        this.emit('error', `Id ${id} is not valid`);
-    };
-
-    this.getAccounts().find((account) => {
-        if (account.id === id) {
-            cb(account.balance);
-        };
-    });
-});
-
-bank.on('withdraw', function (id, value) {
-    if (value < 0) {
-        this.emit('error', 'Cannot withdraw negative value');
-    };
-
-    const [filtered] = this.getAccounts().filter((account) => account.id === id);
-    if (!filtered) {
-        this.emit('error', `Id ${id} is not valid`);
-    };
-
-    this.getAccounts().find((account) => {
-        if (account.id === id) {
-            const available = account.balance - value;
-            if (available < 0) {
-                this.emit(
-                    'error',
-                    `Only ${account.balance} available to withdraw`
-                );
-            } else {
-                account.balance = available;
-            };
-        };
-    });
-});
-
-bank.on('send', function (idFirst, idSecond, value) {
-    if (value <= 0) {
-        this.emit(
-            'error',
-            `Only positive value can be sent, you stated ${value}`
-        );
-    };
-    this.getAccounts().find((account) => {
-        const [filtered1] = this.getAccounts().filter(
-            (account) => account.id === idFirst
-        );
-        if (!filtered1) {
-            this.emit('error', `Id ${idFirst} is not valid`);
-        } else if (account.id === idFirst) {
-            const available = account.balance - value;
-            account.balance = available;
-        }
-
-        const [filtered2] = this.getAccounts().filter(
-            (account) => account.id === idSecond
-        );
-        if (!filtered2) {
-            this.emit('error', `Id ${idSecond} is not valid`);
-        } else if (account.id === idSecond) {
-            const available = account.balance + value;
-            account.balance = available;
-        };
-    });
 });
 
 // bank.emit("add", personFirstId, 20);
