@@ -22,7 +22,7 @@ class Bank extends EventEmitter {
     };
 
     register(acc) {
-        this.on("error", (error) => console.log(error));
+        this.on("error", () => console.log('Transaction failed:'));
         
         this.accounts.find(account => {
             if (account.name === acc.name) {
