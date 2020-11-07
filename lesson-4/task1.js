@@ -1,55 +1,80 @@
 const { Readable, Transform, Writable } = require('stream');
-const crypto = require("crypto");
 
 class Ui extends Readable {
-    constructor(data = [], options = {encoding: 'utf8'}) {
+    constructor(data = [], options = {}) {
         super(options);
         this._data = data;
-        this.on('data', chunk => {});
+        this.on('data', (chunk) => {
+            chunk.source = this.constructor.name.toLowerCase();
+        });
+        this._readableState.objectMode = true;
     }
 
     _read() {
-        let data = this._data.shift();
-        for (const i in data) {
-            if (!i) {
-                this.push(null);
-            } else {
-                this.push(data[i]);
-            }
-        }
-    }
-}
+        const data = this._data.shift();
+
+        if (!data) {
+            this.push(null);
+        } else {
+            this.push(data);
+        };
+    };
+};
 
 class Guardian extends Transform {
-    constructor(
-        options = {
-            readableObjectMode: true,
-            decodeStrings: false,
-        }
-    ) {
+    constructor(options = {}) {
         super(options);
+        this._readableState.objectMode = true;
+        this._writableState.objectMode = true;
     }
 
-    _transform(chunk, encoding, done) {
+    encodeHex(arg) {
         let charHex = '';
-        for(const i in chunk) {
-            charHex += (chunk.charCodeAt(i).toString(16));
+
+        for (const index in arg) {
+            charHex += arg.charCodeAt(index).toString(16);
         };
 
-        this.push(charHex);
+        return charHex;
+    };
+
+    _transform(chunk, encoding, done) {
+        const newChunk = {meta: {}, payload: {}};
+
+        for (const field in chunk) {
+            switch (field) {
+                case 'source':
+                    newChunk.meta[field] = chunk[field];
+                    break;
+                case 'name':
+                    newChunk.payload[field] = chunk[field];
+                    break;
+                case 'password':
+                    newChunk.payload[field] = this.encodeHex(chunk[field]);
+                    break;
+                case 'email':
+                    newChunk.payload[field] = this.encodeHex(chunk[field]);
+                    break; 
+                default:
+                    break;
+            };
+        };
+        this.push(newChunk);
         done();
-    }
-}
+    };
+};
 
 class AccountManager extends Writable {
-    constructor(options = {objectMode: true}) {
+    constructor(options = {}) {
         super(options);
-    }
+        this._writableState.objectMode = true;
+    };
+
     _write(chunk, encoding, done) {
         console.log(chunk);
         done();
-    }
-}
+    };
+};
 
 const customers = [
     {
