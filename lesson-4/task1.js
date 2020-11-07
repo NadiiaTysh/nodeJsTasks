@@ -1,17 +1,42 @@
 const { Readable, Transform, Writable } = require('stream');
 
 class Ui extends Readable {
+    
+    static _validate(data) {
+        data.forEach(obj => {
+            const keys = Object.keys(obj);
+            const values = Object.keys(obj);
+
+            const fieldsRequired = [ 'name', 'email', 'password' ];
+            const success = keys.every((val) => fieldsRequired.includes(val));
+            if (!success) {
+                this.emit('error', 'Not all fields are stated');
+            } else if (values.forEach(element => typeof element !== 'string')) {
+                this.emit('error', 'All fields must be strings');
+            } else if (keys.length > 3) {
+                this.emit('error', 'Only \'name\', \'email\' and \'password\' allowed');
+            };
+        });
+
+        return true;
+    }
+
     constructor(data = [], options = {}) {
         super(options);
         this._data = data;
+        this._readableState.objectMode = true;
+        this.init();
+    };
+    
+    init() {
         this.on('data', (chunk) => {
             chunk.source = this.constructor.name.toLowerCase();
         });
-        this._readableState.objectMode = true;
-    }
+        this.on('error', error => console.log(error.message));
+    };
 
     _read() {
-        const data = this._data.shift();
+        const data = Ui._validate(this._data) && this._data.shift();
 
         if (!data) {
             this.push(null);
@@ -94,21 +119,3 @@ const guardian = new Guardian();
 const manager = new AccountManager();
 
 ui.pipe(guardian).pipe(manager);
-
-// // Было
-// {
-//     name: 'Pitter Black',
-//     email: 'pblack@email.com',
-//     password: 'pblack_123'
-// }
-// // Стало
-// {
-//     meta: {
-//         source: 'ui'
-//     },
-//     payload: {
-//         name: 'Pitter Black',
-//         email: '70626c61636b40656d61696c2e636f6d',
-//         password: '70626c61636b5f313233'
-//     }
-// }
