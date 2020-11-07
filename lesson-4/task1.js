@@ -3,41 +3,46 @@ const { Readable, Transform, Writable } = require('stream');
 class Ui extends Readable {
     
     static _validate(data) {
-        data.forEach(obj => {
-            const keys = Object.keys(obj);
-            const values = Object.keys(obj);
+        if(data) {
+            data.forEach(obj => {
+                const keys = Object.keys(obj);
+                const values = Object.values(obj);
+                const fieldsRequired = [ 'name', 'email', 'password' ];
+                const allFields = fieldsRequired.every(val => keys.includes(val));
+                const allStrings = values.every(element => {
+                    return (typeof element === 'string');
+                });
 
-            const fieldsRequired = [ 'name', 'email', 'password' ];
-            const success = keys.every((val) => fieldsRequired.includes(val));
-            if (!success) {
-                this.emit('error', 'Not all fields are stated');
-            } else if (values.forEach(element => typeof element !== 'string')) {
-                this.emit('error', 'All fields must be strings');
-            } else if (keys.length > 3) {
-                this.emit('error', 'Only \'name\', \'email\' and \'password\' allowed');
-            };
-        });
-
-        return true;
-    }
+                if (!allFields) {
+                    this.emit('error', 'Not all fields are stated');
+                } else if (!allStrings) {
+                    this.emit('error', 'All fields must be strings');
+                } else if (keys.length > 3) {
+                    this.emit('error', 'Only name, email and password allowed');
+                } else {
+    
+                    return;
+                };
+            });
+        };
+    };
 
     constructor(data = [], options = {}) {
         super(options);
         this._data = data;
         this._readableState.objectMode = true;
         this.init();
+        Ui._validate(data);
     };
     
     init() {
         this.on('data', (chunk) => {
             chunk.source = this.constructor.name.toLowerCase();
         });
-        this.on('error', error => console.log(error.message));
     };
 
     _read() {
-        const data = Ui._validate(this._data) && this._data.shift();
-
+        const data = this._data.shift();
         if (!data) {
             this.push(null);
         } else {
