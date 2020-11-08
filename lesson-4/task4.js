@@ -4,20 +4,26 @@ class Ui extends Readable {
     static _validate(data) {
         if(data) {
             data.forEach(obj => {
-                const keys = Object.keys(obj);
-                const values = Object.values(obj);
+                const {meta: {algorithm}} = obj;
+                const algorithmsAllowed = [ 'hex', 'base64' ];
+                const keys = Object.keys(obj.payload);
+                const values = Object.values(obj.payload);
                 const fieldsRequired = [ 'name', 'email', 'password' ];
                 const allFields = fieldsRequired.every(val => keys.includes(val));
                 const allStrings = values.every(element => {
                     return (typeof element === 'string');
                 });
+                const allLengths = values.every(element => element.length);
+                const onlyAllowedAlgorithms = algorithmsAllowed.some(alg => alg === algorithm);
 
                 if (!allFields) {
                     this.emit('error', 'Not all fields are stated');
-                } else if (!allStrings) {
-                    this.emit('error', 'All fields must be strings');
+                } else if (!allStrings || !allLengths) {
+                    this.emit('error', 'All fields must be not empty strings');
                 } else if (keys.length > 3) {
-                    this.emit('error', 'Only name, email and password allowed');
+                    this.emit('error', 'Only name, email and password allowed in payload');
+                } else if (!onlyAllowedAlgorithms) {
+                    this.emit('error', 'Only hex and base64 algoritms allowed');
                 } else {
     
                     return;
@@ -30,7 +36,7 @@ class Ui extends Readable {
         super(options);
         this._data = data;
         this._readableState.objectMode = true;
-        // Ui._validate(data);
+        Ui._validate(data);
     };
 
     _read() {
@@ -122,7 +128,7 @@ const customers = [
             password: 'b3doaXRlXzQ1Ng==',
         },
         meta: {
-            algorithm: 'btoa',
+            algorithm: 'base64',
         },
     },
 ];
