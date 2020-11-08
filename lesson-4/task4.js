@@ -1,17 +1,4 @@
 const { Readable, Transform, Writable } = require('stream');
-const EventEmitter = require('events');
-
-class DB extends EventEmitter {
-    #data;
-    constructor() {
-        super();
-        this.#data = [];
-    };
-
-    getRecords() {
-        return this.#data;
-    };
-};
 
 class Ui extends Readable {  
     static _validate(data) {
@@ -43,14 +30,7 @@ class Ui extends Readable {
         super(options);
         this._data = data;
         this._readableState.objectMode = true;
-        this.init();
-        Ui._validate(data);
-    };
-    
-    init() {
-        this.on('data', (chunk) => {
-            chunk.source = this.constructor.name.toLowerCase();
-        });
+        // Ui._validate(data);
     };
 
     _read() {
@@ -63,66 +43,51 @@ class Ui extends Readable {
     };
 };
 
-class Guardian extends Transform {
+class Decryptor extends Transform {
     constructor(options = {}) {
         super(options);
         this._readableState.objectMode = true;
         this._writableState.objectMode = true;
-    }
+    };
 
-    encodeHex(arg) {
-        let charHex = '';
+    decodeHex(arg) {
+        let fromCharString = '';
 
-        for (const index in arg) {
-            charHex += arg.charCodeAt(index).toString(16);
+        for (let index = 0; index < arg.length; index += 2) {
+            fromCharString += String.fromCharCode(parseInt(arg.substr(index, 2), 16));
         };
 
-        return charHex;
+        return fromCharString;
+    };
+
+    decodeBtoa(arg) {
+        const fromBtoaString = Buffer.from(arg, 'base64').toString('binary');
+
+        return fromBtoaString;
     };
 
     _transform(chunk, encoding, done) {
-        const newChunk = {meta: {}, payload: {}};
+        const newChunk = {};
+        const {payload, meta: {algorithm}} = chunk;
 
-        for (const field in chunk) {
+        for (const field in payload) {
             switch (field) {
-                case 'source':
-                    newChunk.meta[field] = chunk[field];
-                    break;
                 case 'name':
-                    newChunk.payload[field] = chunk[field];
+                    newChunk[field] = payload[field];
                     break;
                 case 'password':
-                    case 'email':
-                    newChunk.payload[field] = this.encodeHex(chunk[field]);
+                case 'email':
+                    if (algorithm === 'hex') {
+                        newChunk[field] = this.decodeHex(payload[field]);
+                    } else {
+                        newChunk[field] = this.decodeBtoa(payload[field]);
+                    }
                     break; 
                 default:
                     break;
             };
         };
         this.push(newChunk);
-        done();
-    };
-};
-
-class Logger extends Transform {
-    constructor(options = {}) {
-        super(options);
-        this._readableState.objectMode = true;
-        this._writableState.objectMode = true;
-    }
-
-    _transform(chunk, encoding, done) {
-        const {meta: {source}} = chunk;
-        const log = {
-            meta: source,
-            payload: chunk.payload,
-            created: new Date(),
-        };
-
-        db.on('data', () => console.log(db.getRecords()));
-        db.emit('data', db.getRecords().push(log));
-
-        this.push(chunk);
         done();
     };
 };
@@ -134,28 +99,36 @@ class AccountManager extends Writable {
     };
 
     _write(chunk, encoding, done) {
-        console.log(chunk.payload);
+        console.log(chunk);
         done();
     };
 };
 
 const customers = [
     {
-        name: 'Pitter Black',
-        email: 'pblack@email.com',
-        password: 'pblack_123',
+        payload: {
+            name: 'Pitter Black',
+            email: '70626c61636b40656d61696c2e636f6d',
+            password: '70626c61636b5f313233',
+        },
+        meta: {
+            algorithm: 'hex',
+        },
     },
     {
-        name: 'Oliver White',
-        email: 'owhite@email.com',
-        password: 'owhite_456',
+        payload: {
+            name: 'Oliver White',
+            email: 'b3doaXRlQGVtYWlsLmNvbQ==',
+            password: 'b3doaXRlXzQ1Ng==',
+        },
+        meta: {
+            algorithm: 'btoa',
+        },
     },
 ];
 
 const ui = new Ui(customers);
-const guardian = new Guardian();
-const logger = new Logger();
+const decryptor = new Decryptor();
 const manager = new AccountManager();
-const db = new DB();
 
-ui.pipe(guardian).pipe(logger).pipe(manager);
+ui.pipe(decryptor).pipe(manager);
