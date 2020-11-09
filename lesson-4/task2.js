@@ -52,8 +52,9 @@ class Ui extends Readable {
 };
 
 class Guardian extends Transform {
-    constructor(options = {}) {
+    constructor(options = {encodedFields: ['password', 'email'], inMeta: 'source'}) {
         super(options);
+        this.options = options;
         this._readableState.objectMode = true;
         this._writableState.objectMode = true;
     }
@@ -70,23 +71,17 @@ class Guardian extends Transform {
 
     _transform(chunk, encoding, done) {
         const newChunk = {meta: {}, payload: {}};
+        const {encodedFields, inMeta} = this.options;
 
         for (const field in chunk) {
-            switch (field) {
-                case 'source':
-                    newChunk.meta[field] = chunk[field];
-                    break;
-                case 'name':
-                    newChunk.payload[field] = chunk[field];
-                    break;
-                case 'password':
-                    newChunk.payload[field] = this.encodeHex(chunk[field]);
-                    break;
-                case 'email':
-                    newChunk.payload[field] = this.encodeHex(chunk[field]);
-                    break; 
-                default:
-                    break;
+            if(field === inMeta) {
+                newChunk.meta[field] = chunk[field];
+
+            } else if(encodedFields.find(element => element === field)) {
+                newChunk.payload[field] = this.encodeHex(chunk[field]);
+                
+            } else {
+                newChunk.payload[field] = chunk[field];
             };
         };
         this.push(newChunk);

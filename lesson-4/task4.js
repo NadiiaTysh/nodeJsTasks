@@ -34,9 +34,9 @@ class Ui extends Readable {
 
     constructor(data = [], options = {}) {
         super(options);
+        Ui._validate(data);
         this._data = data;
         this._readableState.objectMode = true;
-        Ui._validate(data);
     };
 
     _read() {
@@ -50,47 +50,40 @@ class Ui extends Readable {
 };
 
 class Decryptor extends Transform {
-    constructor(options = {}) {
+    constructor(options = {decodedFields: ['password', 'email']}) {
         super(options);
+        this.options = options;
         this._readableState.objectMode = true;
         this._writableState.objectMode = true;
     };
 
-    decodeHex(arg) {
-        let fromCharString = '';
+    decodeValue(arg, algorithm) {
+        if(algorithm === 'hex') {
+            let fromCharString = '';
 
-        for (let index = 0; index < arg.length; index += 2) {
-            fromCharString += String.fromCharCode(parseInt(arg.substr(index, 2), 16));
+            for (let index = 0; index < arg.length; index += 2) {
+                fromCharString += String.fromCharCode(parseInt(arg.substr(index, 2), 16));
+            };
+    
+            return fromCharString;
+        } else {
+            const fromBtoaString = Buffer.from(arg, 'base64').toString('binary');
+
+            return fromBtoaString;
         };
-
-        return fromCharString;
-    };
-
-    decodeBtoa(arg) {
-        const fromBtoaString = Buffer.from(arg, 'base64').toString('binary');
-
-        return fromBtoaString;
     };
 
     _transform(chunk, encoding, done) {
         const newChunk = {};
         const {payload, meta: {algorithm}} = chunk;
+        const {decodedFields} = this.options;
 
         for (const field in payload) {
-            switch (field) {
-                case 'name':
-                    newChunk[field] = payload[field];
-                    break;
-                case 'password':
-                case 'email':
-                    if (algorithm === 'hex') {
-                        newChunk[field] = this.decodeHex(payload[field]);
-                    } else {
-                        newChunk[field] = this.decodeBtoa(payload[field]);
-                    }
-                    break; 
-                default:
-                    break;
+            if(decodedFields.find(element => element === field)) {
+                newChunk[field] = this.decodeValue(payload[field], algorithm);
+                
+            } else {
+                newChunk[field] = payload[field];
             };
         };
         this.push(newChunk);
