@@ -6,12 +6,20 @@ class Bank extends EventEmitter {
     static _validate = (name, balance) => {
         if (!name) {
             this.emit('error', `User name is not stated`);
+
+            return;
         } else if (typeof name !== 'string') {
             this.emit('error', `User name must be a string`);
+
+            return;
         } else if (!balance) {
             this.emit('error', `User balance is not stated`);
+
+            return;
         } else if (typeof balance !== 'number') {
             this.emit('error', `User balance must be a number`);
+
+            return;
         } else {
 
             return true;
@@ -32,16 +40,20 @@ class Bank extends EventEmitter {
     };
 
     register(acc) {
-        this.on("error", () => console.log('Transaction failed:'));
+        this.on("error", () => console.log('Transaction failed'));
         
         this.getAccounts().find(account => {
             if (account.name === acc.name) {
                 this.emit('error', `User ${acc.name} already exists`);
+
+                return;
             };
         });
 
         if (acc.balance <= 0) {
             this.emit('error', `User ${acc.name} cannot have balance ${acc.balance}`);
+
+            return;
         };
 
         if (Bank._validate(acc.name, acc.balance)) {
@@ -58,14 +70,22 @@ class Bank extends EventEmitter {
     };
 
     onAdd() {
-        this.on("add", function(id, value) {
+        this.on("add", (id, value) => {
             if (value <= 0) {
                 this.emit('error', `Cannot add ${value} value`);
+
+                return;
+            } else if (!value) {
+                this.emit('error', `Value is not stated`);
+
+                return; 
             };
     
-            const [filtered] = this.getAccounts().filter(account => account.id === id);
-            if (!filtered) {
+            const found = this.getAccounts().find(account => account.id === id);
+            if (!found) {
                 this.emit('error', `Id ${id} is not valid`);
+
+                return;
             };
     
             this.getAccounts().find(account => {
@@ -77,10 +97,12 @@ class Bank extends EventEmitter {
     };
 
     onGet() {
-        this.on("get", function(id, cb) {
-            const [filtered] = this.getAccounts().filter(account => account.id === id);
-            if (!filtered) {
+        this.on("get", (id, cb) => {
+            const found = this.getAccounts().find(account => account.id === id);
+            if (!found) {
                 this.emit('error', `Id ${id} is not valid`);
+
+                return;
             };
     
             this.getAccounts().find(account => {
@@ -92,14 +114,22 @@ class Bank extends EventEmitter {
     };
 
     onWithdraw() {
-        this.on("withdraw", function(id, value) {
+        this.on("withdraw", (id, value) => {
             if (value < 0) {
                 this.emit('error', 'Cannot withdraw negative value');
+
+                return;
+            } else if (!value) {
+                this.emit('error', `Value is not stated`);
+
+                return; 
             };
     
-            const [filtered] = this.getAccounts().filter(account => account.id === id);
-            if (!filtered) {
+            const found = this.getAccounts().find(account => account.id === id);
+            if (!found) {
                 this.emit('error', `Id ${id} is not valid`);
+
+                return;
             };
     
             this.getAccounts().find(account => {
@@ -107,6 +137,8 @@ class Bank extends EventEmitter {
                     const available = account.balance - value;
                     if (available < 0) {
                         this.emit('error', `Only ${account.balance} available to withdraw`);
+
+                        return;
                     } else {
                         account.balance = available;
                     };

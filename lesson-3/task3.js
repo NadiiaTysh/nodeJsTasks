@@ -6,12 +6,20 @@ class Bank extends EventEmitter {
     static _validate = (name, balance) => {
         if (!name) {
             this.emit('error', `User name is not stated`);
+
+            return;
         } else if (typeof name !== 'string') {
             this.emit('error', `User name must be a string`);
+
+            return;
         } else if (!balance) {
             this.emit('error', `User balance is not stated`);
+
+            return;
         } else if (typeof balance !== 'number') {
             this.emit('error', `User balance must be a number`);
+
+            return;
         } else {
 
             return true;
@@ -34,11 +42,13 @@ class Bank extends EventEmitter {
     };
 
     register(acc) {
-        this.on("error", () => console.log('Transaction failed:'));
+        this.on("error", () => console.log('Transaction failed'));
 
         this.getAccounts().find((account) => {
             if (account.name === acc.name) {
                 this.emit('error', `User ${acc.name} already exists`);
+
+                return;
             }
         });
 
@@ -47,6 +57,8 @@ class Bank extends EventEmitter {
                 'error',
                 `User ${acc.name} cannot have balance ${acc.balance}`
             );
+
+            return;
         };
 
         if (Bank._validate(acc.name, acc.balance)) {
@@ -63,14 +75,22 @@ class Bank extends EventEmitter {
     };
 
     onAdd() {
-        this.on('add', function (id, value) {
+        this.on('add', (id, value) => {
             if (value <= 0) {
                 this.emit('error', `Cannot add ${value} value`);
-            }
+
+                return;
+            } else if (!value) {
+                this.emit('error', `Value is not stated`);
+
+                return; 
+            };
     
-            const [filtered] = this.getAccounts().filter(account => account.id === id);
-            if (!filtered) {
+            const found = this.getAccounts().find(account => account.id === id);
+            if (!found) {
                 this.emit('error', `Id ${id} is not valid`);
+
+                return;
             };
     
             this.getAccounts().find((account) => {
@@ -82,10 +102,12 @@ class Bank extends EventEmitter {
     };
 
     onGet() {
-        this.on('get', function (id, cb) {
-            const [filtered] = this.getAccounts().filter(account => account.id === id);
-            if (!filtered) {
+        this.on('get', (id, cb) => {
+            const found = this.getAccounts().find(account => account.id === id);
+            if (!found) {
                 this.emit('error', `Id ${id} is not valid`);
+
+                return;
             };
     
             this.getAccounts().find((account) => {
@@ -97,14 +119,22 @@ class Bank extends EventEmitter {
     };
 
     onWithdraw() {
-        this.on('withdraw', function (id, value) {
+        this.on('withdraw', (id, value) => {
             if (value < 0) {
                 this.emit('error', 'Cannot withdraw negative value');
+
+                return;
+            } else if (!value) {
+                this.emit('error', `Value is not stated`);
+
+                return; 
             };
     
-            const [filtered] = this.getAccounts().filter(account => account.id === id);
-            if (!filtered) {
+            const found = this.getAccounts().find(account => account.id === id);
+            if (!found) {
                 this.emit('error', `Id ${id} is not valid`);
+
+                return;
             };
     
             this.getAccounts().find((account) => {
@@ -112,11 +142,15 @@ class Bank extends EventEmitter {
                     const available = account.balance - value;
                     if (!account.limit(value, account.balance, available)) {
                         this.emit('error', 'You exceeded your limit');
+
+                        return;
                     } else if (available < 0) {
                         this.emit(
                             'error',
                             `Only ${account.balance} available to withdraw`
                         );
+
+                        return;
                     } else {
                         account.balance = available;
                     };
@@ -126,29 +160,41 @@ class Bank extends EventEmitter {
     };
 
     onSend() {
-        this.on('send', function (idFirst, idSecond, value) {
+        this.on('send', (idFirst, idSecond, value) => {
             if (value <= 0) {
                 this.emit(
                     'error',
                     `Only positive value can be sent, you stated ${value}`
                 );
+
+                return;
+            } else if (!value) {
+                this.emit('error', `Value is not stated`);
+
+                return; 
             };
             this.getAccounts().find((account) => {
-                const [filtered1] = this.getAccounts().filter(
+                const found1 = this.getAccounts().find(
                     (account) => account.id === idFirst
                 );
-                if (!filtered1) {
+                if (!found1) {
                     this.emit('error', `Id ${idFirst} is not valid`);
+
+                    return;
                 } else if (!account.limit(value, account.balance, available)) {
                     this.emit('error', 'You exceeded your limit');
+
+                    return;
                 } else if (account.id === idFirst) {
                     const available = account.balance - value;
                     account.balance = available;
                 }
     
-                const [filtered2] = this.getAccounts().filter(account => account.id === idSecond);
-                if (!filtered2) {
+                const found2 = this.getAccounts().find(account => account.id === idSecond);
+                if (!found2) {
                     this.emit('error', `Id ${idSecond} is not valid`);
+
+                    return;
                 } else if (account.id === idSecond) {
                     const available = account.balance + value;
                     account.balance = available;
@@ -158,7 +204,7 @@ class Bank extends EventEmitter {
     };
 
     onChangeLimit() {
-        this.on('changeLimit', function(id, cb) {
+        this.on('changeLimit', (id, cb) => {
             this.getAccounts().find((account) => {
                 if (account.id === id) {
                     account.limit = cb;
