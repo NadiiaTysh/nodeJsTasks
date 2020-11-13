@@ -29,10 +29,10 @@ class Ui extends Readable {
 
     constructor(data = [], options = {}) {
         super(options);
+        Ui._validate(data);
         this._data = data;
         this._readableState.objectMode = true;
         this.init();
-        Ui._validate(data);
     };
     
     init() {
