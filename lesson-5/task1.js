@@ -76,7 +76,7 @@ class Guardian extends Transform {
             crypto.randomFill(new Uint8Array(16), (err, iv) => {
                 if (err) throw err;
 
-                const newChunk = {meta: {}, payload: {}};
+                const newChunk = {meta: {}, payload: {}, iv};
                 const {encodedFields, inMeta} = this.options;
 
                 for (const field in chunk) {
@@ -91,7 +91,7 @@ class Guardian extends Transform {
                         cipher.setEncoding('hex');
         
                         cipher.on('data', (piece) => {
-                            (encrypted += piece);
+                            encrypted += piece;
                             newChunk.payload[field] = encrypted;
                         });
                         cipher.write(chunk[field]);
@@ -108,14 +108,55 @@ class Guardian extends Transform {
 };
 
 class AccountManager extends Writable {
-    constructor(options = {}) {
+    #dataDb;
+    constructor(options = {encodedFields: ['password', 'email']}) {
         super(options);
+        this.options = options;
+        this.#dataDb = []; 
         this._writableState.objectMode = true;
     };
 
+    getDataDB() {
+        return this.#dataDb;
+    };
+
     _write(chunk, encoding, done) {
-        console.log(chunk);
-        done();
+        const dataDB = {
+            meta: chunk.meta,
+            payload: chunk.payload,
+        };
+        this.getDataDB().push(dataDB);
+        console.log(this.getDataDB());
+
+        crypto.scrypt(password, 'salt', 24, (err, key) => {
+            if (err) throw err;
+
+            const {encodedFields} = this.options;
+            const {payload, iv} = chunk;
+
+            for (const field in payload) {
+                if(encodedFields.find(element => element === field)) {
+
+                    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    
+                    let decrypted = '';
+                    decipher.on('readable', () => {
+                        while (
+                            null !== (chunk = decipher.read())
+                        ) {
+                            decrypted += chunk.toString(
+                                'utf8'
+                            );
+                        }
+                    });
+                    const encrypted = payload[field];
+                    decipher.write(encrypted, 'hex');
+                    decipher.end();
+                    console.log('decrypted:', decrypted);
+                };
+            };
+            done();
+        });
     };
 };
 
