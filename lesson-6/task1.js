@@ -8,9 +8,10 @@ class Json2Csv {
     constructor(input, output) {
         this.in = input;
         this.out = output;
+        this.replaceChar = '!!!!';
         (async () => {
             const data = await this.parseJson(this.in);
-            const CSV = this.arrayToCsv(data);
+            const CSV = this.arrayToCsv(data, this.replaceChar);
             await this.writeCsv(this.out, CSV);
             console.log(`Successfully converted!`);
         })()
@@ -19,7 +20,7 @@ class Json2Csv {
     async parseJson(input) {
         try {
             const content = await readFile(input);
-    
+
             return JSON.parse(content);
         } catch (error) {
             console.log(error);
@@ -27,11 +28,21 @@ class Json2Csv {
         }
     };
     
-    arrayToCsv(data) {
+    arrayToCsv(data, replaceChar) {
         const csv = data.map(row => {
             const values = Object.values(row);
-    
-            return values;
+            const valuesChar = values.map(el => {
+                // replacing commas to preserve them
+                if (typeof el === 'string') {
+                    const newStr = el.replace(',', replaceChar);
+
+                    return newStr;
+                } else {
+
+                    return el;
+                }
+            });
+            return valuesChar;
         });
         csv.unshift(Object.keys(data[0]));
 
