@@ -1,5 +1,6 @@
 const { Readable, Transform, Writable } = require('stream');
 const crypto = require('crypto');
+const { encode: codify, decode: decodify } = require('./helpers');
 
 const algorithm = 'aes192';
 const password = '1qaZxsw2@3edcVfr4';
@@ -37,11 +38,11 @@ class Ui extends Readable {
         };
     };
 
-    constructor(data = [], options = {}) {
+    constructor(data = [], options = {objectMode: true}) {
         super(options);
         Ui._validate(data);
         this._data = data;
-        this._readableState.objectMode = true;
+        this._readableState.objectMode = options.objectMode;
         this.init();
     };
 
@@ -62,11 +63,17 @@ class Ui extends Readable {
 };
 
 class Guardian extends Transform {
-    constructor(options = {encodedFields: ['password', 'email'], inMeta: 'source'}) {
+    constructor(
+        options = {
+            encodedFields: ['password', 'email'],
+            inMeta: 'source',
+            objectMode: true,
+        }
+    ) {
         super(options);
         this.options = options;
-        this._readableState.objectMode = true;
-        this._writableState.objectMode = true;
+        this._readableState.objectMode = options.objectMode;
+        this._writableState.objectMode = options.objectMode;
     };
 
     _transform(chunk, encoding, done) {
@@ -76,83 +83,57 @@ class Guardian extends Transform {
             crypto.randomFill(new Uint8Array(16), (err, iv) => {
                 if (err) throw err;
 
-                const newChunk = {meta: {}, payload: {}, iv};
-                const {encodedFields, inMeta} = this.options;
+                const newChunk = { meta: {}, payload: {}, iv };
+                const { encodedFields, inMeta } = this.options;
 
                 for (const field in chunk) {
-                    if(field === inMeta) {
+                    if (field === inMeta) {
                         newChunk.meta[field] = chunk[field];
-
-                    } else if(encodedFields.find(element => element === field)) {
-
-                        const cipher = crypto.createCipheriv(algorithm, key, iv);
-        
-                        let encrypted = '';
-                        cipher.setEncoding('hex');
-        
-                        cipher.on('data', (piece) => {
-                            encrypted += piece;
-                            newChunk.payload[field] = encrypted;
-                        });
-                        cipher.write(chunk[field]);
-                        cipher.end();
+                    } else if (
+                        encodedFields.find((element) => element === field)
+                        ) {
+                        codify(algorithm, key, iv, chunk, newChunk, field);
                     } else {
                         newChunk.payload[field] = chunk[field];
-                    };
-                };
+                    }
+                }
                 this.push(newChunk);
                 done();
             });
         });
-    };
+    }
 };
 
 class AccountManager extends Writable {
-    #dataDb;
-    constructor(options = {encodedFields: ['password', 'email']}) {
+    #dataDB;
+    constructor(options = {encodedFields: ['password', 'email'], objectMode: true}) {
         super(options);
         this.options = options;
-        this.#dataDb = []; 
-        this._writableState.objectMode = true;
+        this.#dataDB = []; 
+        this._writableState.objectMode = options.objectMode;
     };
 
     getDataDB() {
-        return this.#dataDb;
+        return this.#dataDB;
     };
 
     _write(chunk, encoding, done) {
-        const dataDB = {
+        const data = {
             meta: chunk.meta,
             payload: chunk.payload,
         };
-        this.getDataDB().push(dataDB);
+        this.getDataDB().push(data);
         console.log(this.getDataDB());
 
         crypto.scrypt(password, 'salt', 24, (err, key) => {
             if (err) throw err;
 
-            const {encodedFields} = this.options;
-            const {payload, iv} = chunk;
+            const { encodedFields } = this.options;
+            const { payload, iv } = chunk;
 
             for (const field in payload) {
                 if(encodedFields.find(element => element === field)) {
-
-                    const decipher = crypto.createDecipheriv(algorithm, key, iv);
-    
-                    let decrypted = '';
-                    decipher.on('readable', () => {
-                        while (
-                            null !== (chunk = decipher.read())
-                        ) {
-                            decrypted += chunk.toString(
-                                'utf8'
-                            );
-                        }
-                    });
-                    const encrypted = payload[field];
-                    decipher.write(encrypted, 'hex');
-                    decipher.end();
-                    console.log('decrypted:', decrypted);
+                    decodify(algorithm, key, iv, chunk, payload, field);
                 };
             };
             done();
