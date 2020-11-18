@@ -3,15 +3,18 @@ const path = require('path');
 
 const inputFile = path.join(__dirname, '/data/comments.json');
 const outputFile = path.join(__dirname, '/data/comments.csv');
+const filters = ['postId', 'name', 'body'];
 
 class Json2Csv {
-    constructor(input, output) {
+    constructor(input, output, filterColumns) {
         this.in = input;
         this.out = output;
         this.replacedChar = '!!!!';
+        this.filterColumns = filterColumns;
         (async () => {
             const data = await this.parseJson(this.in);
-            const replacedData = this.replaceData(data, this.replacedChar);
+            const filteredData = this.filterData(data, this.filterColumns);
+            const replacedData = this.replaceData(filteredData, this.replacedChar);
             const replacedCSV = this.arrayToCsv(replacedData);
             const CSV = this.returnedCSV(replacedCSV, this.replacedChar);
             await this.writeCsv(this.out, CSV);
@@ -28,6 +31,18 @@ class Json2Csv {
             console.log(error);
             process.exit();
         }
+    };
+
+    filterData(data, filters) {
+        const dataFiltered = data.map(el => {
+            const newEl = {};
+            filters.forEach(filter => {
+                newEl[filter] = el[filter];
+            });
+
+            return newEl;
+        })
+        return dataFiltered;
     };
     
     replaceData(data, chars) {
@@ -72,4 +87,4 @@ class Json2Csv {
     };
 };
 
-const json2Csv = new Json2Csv(inputFile, outputFile);
+const json2Csv = new Json2Csv(inputFile, outputFile, filters);
