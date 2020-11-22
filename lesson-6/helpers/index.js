@@ -1,6 +1,7 @@
 const zlib = require('zlib');
+const fs = require('fs');
 
-const validation = (options) => {
+const validation = (options, file) => {
     const allowedField = 'algorithm';
     const allowedValues = ['gzip', 'deflate'];
     const actualFields = Object.keys(options);
@@ -16,6 +17,12 @@ const validation = (options) => {
     } else if (isNotValidValues) {
         throw new Error(`Only ${allowedValues} values are valid`);
     };
+
+    fs.stat(file, (err, stat) => {
+        if(err !== null && err.code === 'ENOENT') {
+            throw new Error(`${file} does not exist`);
+        };
+    });
 };
 
 const packAlgorithm = ({ algorithm }) => {

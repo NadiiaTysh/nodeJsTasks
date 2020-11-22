@@ -14,8 +14,8 @@ class Archiver {
     }
 
     pack() {
+        validation(this.options, this.input);
         const read = fs.createReadStream(this.input);
-        validation(this.options);
         const arch = packAlgorithm(this.options);
         const write = fs.createWriteStream(this.output);
 
@@ -23,6 +23,7 @@ class Archiver {
     }
 
     unpack() {
+        validation(this.options, this.output);
         const read = fs.createReadStream(this.output);
         const unarch = unpackAlgorithm(this.options);
         const write = fs.createWriteStream(this.outputUnpacked);
