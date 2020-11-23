@@ -1,6 +1,6 @@
 const net = require('net');
 
-// const filterItem = {
+// const filter = {
 //     name: {
 //         first: 'John',
 //         last: 'd',
@@ -15,14 +15,14 @@ const net = require('net');
 //     email: '@gmail.com'
 // };
 
-// const filterItem = {
+// const filter = {
 //     name: {
 //         first: 'John',
 //     },
 //     email: '@gmail.com',
 // };
 
-// const filterItem = {
+// const filter = {
 //     name: {
 //         first: 'John',
 //     },
@@ -32,29 +32,49 @@ const net = require('net');
 //     },
 // };
 
-const filterItem = {
+// const filter = {
+//     name: {
+//         first: 'ie',
+//         last: 'ner',
+//     },
+//     phone: '26',
+//     address: {
+//         zip: '5666',
+//         city: 'Shannyton',
+//         country: 'rrat',
+//         street: 'Wuckert',
+//     },
+//     email: 'earlene38'
+// };
+
+const filter = {
     name: {
         first: 'ie',
-        last: 'ner',
+        last: 'ttl',
     },
-    phone: '26',
+    phone: '67',
     address: {
-        zip: '5666',
-        city: 'Shannyton',
-        country: 'rrat',
-        street: 'Wuckert',
+        country: 'Cuba',
+        street: '01',
     },
-    email: 'earlene38'
 };
 
+// const filter = {
+//     name: {
+//         first: 'Ali',
+//     },
+//     email: 'mail.com',
+// };
+
 const client = new net.Socket();
+
 client.connect(8080, () => {
     console.log('Connected!');
-    client.write(JSON.stringify(filterItem));
+    client.write(JSON.stringify(filter));
 });
 
 client.on('data', data => {
-    console.log(data);
+    console.log(JSON.parse(data));
 });
 
 client.on('close', () => {

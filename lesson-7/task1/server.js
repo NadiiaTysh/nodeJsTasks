@@ -2,7 +2,7 @@ const net = require('net');
 const fs = require('fs');
 const path = require('path');
 
-const { flattenObject } = require('../helpers');
+const { flattenObject, validateObject } = require('../helpers');
 
 const server = net.createServer();
 const PORT = 8080;
@@ -17,18 +17,26 @@ server.on('connection', (socket) => {
             if (err) throw err;
             const content = JSON.parse(data);
 
+            validateObject(filterItem);
             const flattedFilter = flattenObject(filterItem);
 
             const filteredContent = content.filter((obj) => {
                 const flattedObj = flattenObject(obj);
-                let isIncluded;
+                let includedArray = [];
+
                 for (const filterField in flattedFilter) {
-                    isIncluded = flattedObj[filterField].includes(flattedFilter[filterField]);
+                    const isIncluded = flattedObj[filterField]
+                        .toLowerCase()
+                        .includes(flattedFilter[filterField].toLowerCase());
+
+                    includedArray.push(isIncluded);
                 };
+                let isMatch = includedArray.every(el => el === true); 
                 
-                return isIncluded;
+                return isMatch;
             });
-            console.log(filteredContent);
+
+            socket.write(JSON.stringify(filteredContent));
         });
     });
 
