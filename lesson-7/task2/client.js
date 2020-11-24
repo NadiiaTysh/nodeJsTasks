@@ -61,7 +61,7 @@ const filter = {
     },
     meta: {
         format: 'csv',
-        // archive: true,
+        archive: true,
     },
 };
 

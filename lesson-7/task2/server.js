@@ -19,7 +19,7 @@ server.on('connection', (socket) => {
             if (err) throw err;
             const content = JSON.parse(data);
 
-            validateObject(filterItem);
+            validateObject(filterItem, meta);
             const flattedFilter = flattenObject(filterItem);
 
             let filteredContent = content.filter((obj) => {
@@ -47,7 +47,7 @@ server.on('connection', (socket) => {
                 filteredContent = csv;
             };
             if (meta.archive && meta.archive === true) {
-                const arch = zlib.createGzip(filteredContent);
+                const arch = zlib.createGzip(JSON.stringify(filteredContent));
                 filteredContent = arch;
             };
             console.log(filteredContent);
