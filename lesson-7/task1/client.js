@@ -75,6 +75,7 @@ client.connect(8080, () => {
 
 client.on('data', data => {
     console.log(JSON.parse(data));
+    client.destroy();
 });
 
 client.on('close', () => {
