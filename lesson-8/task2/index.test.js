@@ -9,16 +9,7 @@ describe('test Class Bank', () => {
     test('function register returns id', () => {
         expect(bank.register(customer)).toBeTruthy();
     });
-    test('on add event is successful', () => {
-        expect(Bank.on('add')).toBe('success');
-    });
-    test('on error event is error', () => {
-        expect(() => Bank.on('error')).toThrow();
-    });
-    test('emit error event is error', () => {
-        expect(() => Bank.emit('error')).toThrow();
-    });
-    test('check for duplicates', () => {
+    test('error if add duplicates', () => {
         expect(() => bank._checkForDuplicates(customer)).toThrow();
     });
     test('add amount returns balance', () => {

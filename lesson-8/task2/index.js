@@ -30,28 +30,25 @@ class Bank extends EventEmitter {
         );
 
         if (isCustomerExists) {
-            throw new Error(`duplicated customer for name: '${customer.name}'`);
-            // this.emit(
-            //     'error',
-            //     new Error(`duplicated customer for name: '${customer.name}'`)
-            // );
+            this.emit(
+                'error',
+                new Error(`duplicated customer for name: '${customer.name}'`)
+            );
         }
     }
 
     _enroll(personId, amount) {
         if (amount <= 0) {
-            throw new Error('amount should be grater than 0');
-            // this.emit('error', new Error('amount should be grater than 0'));
+            this.emit('error', new Error('amount should be grater than 0'));
         }
 
         const index = this.customers.findIndex(({ id }) => id === personId);
 
         if (index < 0) {
-            throw new Error(`customer with id '${personId}' not found`);
-            // this.emit(
-            //     'error',
-            //     new Error(`customer with id '${personId}' not found`)
-            // );
+            this.emit(
+                'error',
+                new Error(`customer with id '${personId}' not found`)
+            );
         }
 
         const customer = this.customers[index];

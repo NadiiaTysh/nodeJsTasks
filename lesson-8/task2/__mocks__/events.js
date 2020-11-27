@@ -1,19 +1,24 @@
-const EventEmitter = jest.genMockFromModule('events');
+const EventEmitterOriginal = jest.genMockFromModule('events');
 
-EventEmitter.on = (eventName, cb) => {
-    if (eventName === 'add') {
-
-        return 'success';
-    } else if (eventName === 'error') {
-
-        throw new Error();
+class EventEmitter extends EventEmitterOriginal {
+    constructor() {
+        super();
+        this._events = {};
     };
-};
+    on(name, listener) {
+        if (!this._events[name]) {
+            this._events[name] = [];
+        };
 
-EventEmitter.emit = (eventName) => {
-    if (eventName === 'error') {
+        this._events[name].push(listener);
+    };
 
-        throw new Error('error');
+    emit(name, data) {
+        const fireCallbacks = (callback) => {
+            callback(data);
+        };
+
+        this._events[name].forEach(fireCallbacks);
     };
 };
 

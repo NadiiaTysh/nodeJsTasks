@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">92.59% </span>
+                <span class="strong">96.3% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>25/27</span>
+                <span class='fraction'>26/27</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75% </span>
+                <span class="strong">87.5% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>6/8</span>
+                <span class='fraction'>7/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">96% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>24/25</span>
+                <span class='fraction'>25/25</span>
             </div>
         
             
@@ -120,10 +120,7 @@
 <a name='L61'></a><a href='#L61'>61</a>
 <a name='L62'></a><a href='#L62'>62</a>
 <a name='L63'></a><a href='#L63'>63</a>
-<a name='L64'></a><a href='#L64'>64</a>
-<a name='L65'></a><a href='#L65'>65</a>
-<a name='L66'></a><a href='#L66'>66</a>
-<a name='L67'></a><a href='#L67'>67</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L64'></a><a href='#L64'>64</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -134,7 +131,7 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -156,7 +153,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -168,12 +164,10 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -199,8 +193,8 @@ class Bank extends EventEmitter {
 &nbsp;
         this.on('add', <span class="fstat-no" title="function not covered" >(p</span>ersonId, amount) =&gt; <span class="cstat-no" title="statement not covered" >this._enroll(personId, amount))</span>;
 &nbsp;
-        this.on('error', <span class="fstat-no" title="function not covered" >({</span> message }) =&gt; {
-<span class="cstat-no" title="statement not covered" >            throw new Error(message);</span>
+        this.on('error', ({ message }) =&gt; {
+            throw new Error(message);
         });
     }
 &nbsp;
@@ -221,28 +215,25 @@ class Bank extends EventEmitter {
         );
 &nbsp;
         if (isCustomerExists) {
-            throw new Error(`duplicated customer for name: '${customer.name}'`);
-            // this.emit(
-            //     'error',
-            //     new Error(`duplicated customer for name: '${customer.name}'`)
-            // );
+            this.emit(
+                'error',
+                new Error(`duplicated customer for name: '${customer.name}'`)
+            );
         }
     }
 &nbsp;
     _enroll(personId, amount) {
         if (amount &lt;= 0) {
-            throw new Error('amount should be grater than 0');
-            // this.emit('error', new Error('amount should be grater than 0'));
+            this.emit('error', new Error('amount should be grater than 0'));
         }
 &nbsp;
         const index = this.customers.findIndex(({ id }) =&gt; id === personId);
 &nbsp;
         if (index &lt; 0) {
-            throw new Error(`customer with id '${personId}' not found`);
-            // this.emit(
-            //     'error',
-            //     new Error(`customer with id '${personId}' not found`)
-            // );
+            this.emit(
+                'error',
+                new Error(`customer with id '${personId}' not found`)
+            );
         }
 &nbsp;
         const customer = this.customers[index];
@@ -262,7 +253,7 @@ module.exports = { Bank };
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank">istanbul</a>
-                at Fri Nov 27 2020 14:29:04 GMT+0200 (Eastern European Standard Time)
+                at Fri Nov 27 2020 18:50:22 GMT+0200 (Eastern European Standard Time)
             </div>
         </div>
         <script src="prettify.js"></script>
